@@ -2,6 +2,7 @@ package se.fk.rimfrost.framework.bff.errorhandling;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.DisplayName;
@@ -22,6 +23,16 @@ class GlobalExceptionMapperTest
 
       assertEquals(404, response.getStatus());
       assertEquals(new ErrorResponse("Upstream error"), response.getEntity());
+   }
+
+   @Test
+   @DisplayName("FBFF-FR-01.2: ProcessingException mappas till HTTP 502 med ErrorResponse")
+   void handleProcessingException_returns502()
+   {
+      Response response = mapper.handleProcessingException(new ProcessingException("connection refused"));
+
+      assertEquals(502, response.getStatus());
+      assertEquals(new ErrorResponse("Upstream unavailable"), response.getEntity());
    }
 
    @Test
