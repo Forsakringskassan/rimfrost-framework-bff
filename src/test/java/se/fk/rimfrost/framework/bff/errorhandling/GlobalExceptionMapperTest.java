@@ -8,6 +8,8 @@ import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+
 class GlobalExceptionMapperTest
 {
 
@@ -40,6 +42,45 @@ class GlobalExceptionMapperTest
    void handleException_returns500()
    {
       Response response = mapper.handleException(new RuntimeException("boom"));
+
+      assertEquals(500, response.getStatus());
+      assertEquals(new ErrorResponse("Internal server error"), response.getEntity());
+   }
+
+   @Test
+   @DisplayName("FBFF-FR-01.3: Maskerat nätverksfel (suppressed IOException bakom NPE) mappas till HTTP 502")
+   void handleException_maskedNetworkError_returns502()
+   {
+      NullPointerException npe = new NullPointerException("no response headers");
+      npe.addSuppressed(new IOException("connection reset"));
+
+      Response response = mapper.handleException(npe);
+
+      assertEquals(502, response.getStatus());
+      assertEquals(new ErrorResponse("Upstream unavailable"), response.getEntity());
+   }
+
+   @Test
+   @DisplayName("FBFF-FR-01.3: Maskerat nätverksfel hittas även via orsakskedjan")
+   void handleException_ioExceptionInCauseChain_returns502()
+   {
+      Exception wrapped = new RuntimeException("wrapper", new IOException("connection reset"));
+
+      Response response = mapper.handleException(wrapped);
+
+      assertEquals(502, response.getStatus());
+      assertEquals(new ErrorResponse("Upstream unavailable"), response.getEntity());
+   }
+
+   @Test
+   @DisplayName("FBFF-FR-01.3: Cirkulär orsakskedja fastnar inte i oändlig loop")
+   void handleException_circularCause_doesNotHang()
+   {
+      RuntimeException a = new RuntimeException("a");
+      RuntimeException b = new RuntimeException("b", a);
+      a.initCause(b);
+
+      Response response = mapper.handleException(a);
 
       assertEquals(500, response.getStatus());
       assertEquals(new ErrorResponse("Internal server error"), response.getEntity());
