@@ -10,6 +10,7 @@ import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,13 +28,18 @@ class OutgoingAuthorizationHeaderFilterTest
    private final OutgoingAuthorizationHeaderFilter filter = new OutgoingAuthorizationHeaderFilter();
    private final MultivaluedMap<String, Object> outgoingHeaders = new MultivaluedHashMap<>();
 
+   @BeforeEach
+   void setUp()
+   {
+      filter.holder = holder;
+      when(requestContext.getHeaders()).thenReturn(outgoingHeaders);
+   }
+
    @Test
    @DisplayName("FBFF-FR-03.1: Sparad Authorization-header vidarebefordras till utgående anrop")
    void filter_authorizationCaptured_forwardsHeader()
    {
-      filter.holder = holder;
       holder.setValue("Bearer abc123");
-      when(requestContext.getHeaders()).thenReturn(outgoingHeaders);
 
       filter.filter(requestContext);
 
@@ -44,12 +50,22 @@ class OutgoingAuthorizationHeaderFilterTest
    @DisplayName("FBFF-FR-03.2: Ingen sparad Authorization-header skickas inte tom eller påhittad vidare")
    void filter_noAuthorizationCaptured_doesNotSetHeader()
    {
-      filter.holder = holder;
-
       filter.filter(requestContext);
 
       assertNull(outgoingHeaders.getFirst(HttpHeaders.AUTHORIZATION));
       assertFalse(outgoingHeaders.containsKey(HttpHeaders.AUTHORIZATION));
+   }
+
+   @Test
+   @DisplayName("En redan satt Authorization-header (t.ex. maskin-till-maskin-token) skrivs inte över")
+   void filter_headerAlreadySetOnRequest_isNotOverwritten()
+   {
+      outgoingHeaders.putSingle(HttpHeaders.AUTHORIZATION, "Bearer service-account-token");
+      holder.setValue("Bearer end-user-token");
+
+      filter.filter(requestContext);
+
+      assertEquals("Bearer service-account-token", outgoingHeaders.getFirst(HttpHeaders.AUTHORIZATION));
    }
 
    @Test
