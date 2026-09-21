@@ -33,3 +33,5 @@ src/generated-source
 /.quarkus/cli/plugins/
 # TLS Certificates
 .certs/
+
+docs/jira-tickets.md
