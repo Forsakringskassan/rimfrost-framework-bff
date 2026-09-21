@@ -40,3 +40,13 @@ public class HealthCheckProducer
 
 Fler bakomliggande tjänster registreras genom att lägga till ytterligare en `@Produces`-metod
 med eget tjänstenamn, config-property-nyckel och timeout.
+
+## Vidarebefordran av Authorization-header
+
+`IncomingAuthorizationHeaderFilter` och `OutgoingAuthorizationHeaderFilter` är globalt
+registrerade JAX-RS-providers (`@Provider`) och kräver ingen egen registrering i konsumerande
+BFF:er — så fort paketet finns på classpath vidarebefordras en inkommande `Authorization`-header
+automatiskt till alla utgående REST-klientanrop, utan att endpoints eller klientgränssnitt
+behöver deklarera `@HeaderParam("Authorization")`. Saknas headern i den inkommande förfrågan
+skickas ingen tom eller påhittad header vidare. Headerns innehåll tolkas, verifieras eller
+lagras aldrig av ramverket.
