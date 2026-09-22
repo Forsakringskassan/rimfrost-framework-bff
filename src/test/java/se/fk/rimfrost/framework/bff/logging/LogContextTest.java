@@ -3,11 +3,11 @@ package se.fk.rimfrost.framework.bff.logging;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import java.util.Map;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
+
+import java.util.Map;
 
 class LogContextTest
 {
@@ -64,5 +64,22 @@ class LogContextTest
 
       assertNull(MDC.get("uppgiftId"));
       assertNull(MDC.get("clientTypId"));
+   }
+
+   @Test
+   @DisplayName("FBFF-FR-04.2: close återställer ett tidigare värde för samma nyckel istället för att ta bort det")
+   void close_nestedContextSameKey_restoresOuterValue()
+   {
+      try (LogContext outer = LogContext.put("uppgiftId", "outer"))
+      {
+         try (LogContext inner = LogContext.put("uppgiftId", "inner"))
+         {
+            assertEquals("inner", MDC.get("uppgiftId"));
+         }
+
+         assertEquals("outer", MDC.get("uppgiftId"));
+      }
+
+      assertNull(MDC.get("uppgiftId"));
    }
 }

@@ -2,38 +2,52 @@ package se.fk.rimfrost.framework.bff.logging;
 
 import org.slf4j.MDC;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 // try-with-resources replacement for the manual try { MDC.put(...) } finally { MDC.remove(...) }
-// pattern repeated across BFF controllers. Never pass the Authorization header's content as a
-// value here — the keys set are logged in clear text.
+// pattern repeated across BFF controllers. close() restores each key's previous value rather
+// than removing it outright, so a nested context reusing a key doesn't clobber an outer one.
+// Never pass the Authorization header's content as a value here — the keys set are logged in
+// clear text.
 public final class LogContext implements AutoCloseable
 {
-   private final String[] keys;
+   private final Map<String, String> previousValues;
 
-   private LogContext(String[] keys)
+   private LogContext(Map<String, String> previousValues)
    {
-      this.keys = keys;
+      this.previousValues = previousValues;
    }
 
    public static LogContext put(String key, String value)
    {
-      MDC.put(key, value);
-      return new LogContext(new String[] { key });
+      return put(Map.of(key, value));
    }
 
    public static LogContext put(Map<String, String> values)
    {
-      values.forEach(MDC::put);
-      return new LogContext(values.keySet().toArray(new String[0]));
+      Map<String, String> previousValues = new LinkedHashMap<>();
+      values.forEach((key, value) ->
+      {
+         previousValues.put(key, MDC.get(key));
+         MDC.put(key, value);
+      });
+      return new LogContext(previousValues);
    }
 
    @Override
    public void close()
    {
-      for (String key : keys)
+      previousValues.forEach((key, previousValue) ->
       {
-         MDC.remove(key);
-      }
+         if (previousValue == null)
+         {
+            MDC.remove(key);
+         }
+         else
+         {
+            MDC.put(key, previousValue);
+         }
+      });
    }
 }
