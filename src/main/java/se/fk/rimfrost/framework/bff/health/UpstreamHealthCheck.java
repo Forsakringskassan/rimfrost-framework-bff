@@ -5,7 +5,7 @@ import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 
 public class UpstreamHealthCheck implements HealthCheck
 {
@@ -35,7 +35,7 @@ public class UpstreamHealthCheck implements HealthCheck
       HttpURLConnection connection = null;
       try
       {
-         connection = (HttpURLConnection) new URL(url).openConnection();
+         connection = (HttpURLConnection) URI.create(url).toURL().openConnection();
          connection.setConnectTimeout(timeoutMillis);
          connection.setReadTimeout(timeoutMillis);
          connection.setRequestMethod("HEAD");
