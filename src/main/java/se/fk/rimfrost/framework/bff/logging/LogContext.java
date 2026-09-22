@@ -27,8 +27,7 @@ public final class LogContext implements AutoCloseable
    public static LogContext put(Map<String, String> values)
    {
       Map<String, String> previousValues = new LinkedHashMap<>();
-      values.forEach((key, value) ->
-      {
+      values.forEach((key, value) -> {
          previousValues.put(key, MDC.get(key));
          MDC.put(key, value);
       });
@@ -38,8 +37,7 @@ public final class LogContext implements AutoCloseable
    @Override
    public void close()
    {
-      previousValues.forEach((key, previousValue) ->
-      {
+      previousValues.forEach((key, previousValue) -> {
          if (previousValue == null)
          {
             MDC.remove(key);
