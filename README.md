@@ -50,3 +50,53 @@ automatiskt till alla utgående REST-klientanrop, utan att endpoints eller klien
 behöver deklarera `@HeaderParam("Authorization")`. Saknas headern i den inkommande förfrågan
 skickas ingen tom eller påhittad header vidare. Headerns innehåll tolkas, verifieras eller
 lagras aldrig av ramverket.
+
+## Test-JAR
+
+Paketet publicerar en test-JAR (`maven-jar-plugin`s `test-jar`-goal) med återanvändbara
+WireMock-baserade hjälpklasser, en per komponent, som konsumerande BFF:er kan använda i sina
+egna integrationstester istället för att bygga upp mockningen själva:
+
+| Klass                            | Täcker                                                        |
+|-----------------------------------|----------------------------------------------------------------|
+| `errorhandling.UpstreamErrorWireMock` | Felscenarierna `GlobalExceptionMapper` hanterar (upstreamstatus, connection reset, maskerat nätverksfel) |
+| `health.HealthCheckWireMock`      | Upp/ned/timeout-scenarier för `UpstreamHealthCheck`            |
+| `auth.AuthorizationHeaderWireMock` | Verifiering av vilken `Authorization`-header ett utgående anrop faktiskt skickade |
+
+Lägg till beroendet med `<classifier>tests</classifier>`:
+
+```xml
+<dependency>
+  <groupId>se.fk.rimfrost.framework.bff</groupId>
+  <artifactId>rimfrost-framework-bff</artifactId>
+  <version>...</version>
+  <classifier>tests</classifier>
+  <scope>test</scope>
+</dependency>
+```
+
+Ärv en hjälpklass, implementera `wiremockMapping(WireMockServer)` med den config-property-nyckel
+som ska peka mot WireMock-servern, och registrera med `@QuarkusTestResource`:
+
+```java
+class OulWireMock extends HealthCheckWireMock
+{
+   @Override
+   protected Map<String, String> wiremockMapping(WireMockServer server)
+   {
+      return Map.of("quarkus.rest-client.oul.url", server.baseUrl());
+   }
+}
+
+@QuarkusTest
+@QuarkusTestResource(OulWireMock.class)
+class OulHealthCheckIT
+{
+   @Test
+   void upstreamDown_healthCheckReportsDown()
+   {
+      HealthCheckWireMock.stubDown(503);
+      // ... anropa hälsokontrollen och verifiera
+   }
+}
+```
