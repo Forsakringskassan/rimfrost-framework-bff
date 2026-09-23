@@ -76,7 +76,10 @@ Lägg till beroendet med `<classifier>tests</classifier>`:
 ```
 
 Ärv en hjälpklass, implementera `wiremockMapping(WireMockServer)` med den config-property-nyckel
-som ska peka mot WireMock-servern, och registrera med `@QuarkusTestResource`:
+som ska peka mot WireMock-servern, och registrera med `@QuarkusTestResource`. Servern lagras per
+konkret subklass, inte i ett delat statiskt fält, så en BFF med flera bakomliggande tjänster kan
+registrera flera subklasser sida vid sida och stubba/läsa dem oberoende av varandra — ange
+subklassen som första argument till hjälpklassens statiska metoder:
 
 ```java
 class OulWireMock extends HealthCheckWireMock
@@ -95,7 +98,7 @@ class OulHealthCheckIT
    @Test
    void upstreamDown_healthCheckReportsDown()
    {
-      HealthCheckWireMock.stubDown(503);
+      HealthCheckWireMock.stubDown(OulWireMock.class, 503);
       // ... anropa hälsokontrollen och verifiera
    }
 }

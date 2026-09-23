@@ -29,13 +29,24 @@ class AuthorizationHeaderWireMockSmokeTest
       }
    }
 
+   private static class OtherTestResource extends AuthorizationHeaderWireMock
+   {
+      @Override
+      protected Map<String, String> wiremockMapping(WireMockServer server)
+      {
+         return Map.of("test.other-downstream.url", server.baseUrl());
+      }
+   }
+
    private final TestResource resource = new TestResource();
+   private final OtherTestResource otherResource = new OtherTestResource();
    private final HttpClient client = HttpClient.newHttpClient();
 
    @AfterEach
    void stopServer()
    {
       resource.stop();
+      otherResource.stop();
    }
 
    @Test
@@ -44,12 +55,12 @@ class AuthorizationHeaderWireMockSmokeTest
    {
       resource.start();
 
-      client.send(HttpRequest.newBuilder(URI.create(AuthorizationHeaderWireMock.getWireMockServer().baseUrl()))
+      client.send(HttpRequest.newBuilder(URI.create(AuthorizationHeaderWireMock.getWireMockServer(TestResource.class).baseUrl()))
             .header(HttpHeaders.AUTHORIZATION, "Bearer abc123")
             .GET().build(),
             HttpResponse.BodyHandlers.discarding());
 
-      Optional<String> captured = AuthorizationHeaderWireMock.getLastReceivedAuthorizationHeader();
+      Optional<String> captured = AuthorizationHeaderWireMock.getLastReceivedAuthorizationHeader(TestResource.class);
 
       assertTrue(captured.isPresent());
       assertEquals("Bearer abc123", captured.get());
@@ -61,10 +72,33 @@ class AuthorizationHeaderWireMockSmokeTest
    {
       resource.start();
 
-      client.send(HttpRequest.newBuilder(URI.create(AuthorizationHeaderWireMock.getWireMockServer().baseUrl()))
+      client.send(HttpRequest.newBuilder(URI.create(AuthorizationHeaderWireMock.getWireMockServer(TestResource.class).baseUrl()))
             .GET().build(),
             HttpResponse.BodyHandlers.discarding());
 
-      assertTrue(AuthorizationHeaderWireMock.getLastReceivedAuthorizationHeader().isEmpty());
+      assertTrue(AuthorizationHeaderWireMock.getLastReceivedAuthorizationHeader(TestResource.class).isEmpty());
+   }
+
+   @Test
+   @DisplayName("Två registrerade instanser fångar sina respektive headers oberoende av varandra")
+   void twoRegisteredInstances_captureHeadersIndependently() throws Exception
+   {
+      resource.start();
+      otherResource.start();
+
+      client.send(HttpRequest.newBuilder(URI.create(AuthorizationHeaderWireMock.getWireMockServer(TestResource.class).baseUrl()))
+            .header(HttpHeaders.AUTHORIZATION, "Bearer first")
+            .GET().build(),
+            HttpResponse.BodyHandlers.discarding());
+      client.send(
+            HttpRequest.newBuilder(URI.create(AuthorizationHeaderWireMock.getWireMockServer(OtherTestResource.class).baseUrl()))
+                  .header(HttpHeaders.AUTHORIZATION, "Bearer second")
+                  .GET().build(),
+            HttpResponse.BodyHandlers.discarding());
+
+      assertEquals("Bearer first",
+            AuthorizationHeaderWireMock.getLastReceivedAuthorizationHeader(TestResource.class).orElseThrow());
+      assertEquals("Bearer second",
+            AuthorizationHeaderWireMock.getLastReceivedAuthorizationHeader(OtherTestResource.class).orElseThrow());
    }
 }

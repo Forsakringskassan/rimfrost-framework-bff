@@ -36,12 +36,23 @@ class UpstreamErrorWireMockSmokeTest
       }
    }
 
+   private static class OtherTestResource extends UpstreamErrorWireMock
+   {
+      @Override
+      protected Map<String, String> wiremockMapping(WireMockServer server)
+      {
+         return Map.of("test.other.url", server.baseUrl());
+      }
+   }
+
    private final TestResource resource = new TestResource();
+   private final OtherTestResource otherResource = new OtherTestResource();
 
    @AfterEach
    void stopServer()
    {
       resource.stop();
+      otherResource.stop();
    }
 
    @Test
@@ -49,10 +60,11 @@ class UpstreamErrorWireMockSmokeTest
    void stubUpstreamStatus_mapsThroughExceptionMapper() throws Exception
    {
       resource.start();
-      UpstreamErrorWireMock.stubUpstreamStatus(404);
+      UpstreamErrorWireMock.stubUpstreamStatus(TestResource.class, 404);
 
       HttpResponse<Void> response = client.send(
-            HttpRequest.newBuilder(URI.create(UpstreamErrorWireMock.getWireMockServer().baseUrl())).GET().build(),
+            HttpRequest.newBuilder(URI.create(UpstreamErrorWireMock.getWireMockServer(TestResource.class).baseUrl()))
+                  .GET().build(),
             HttpResponse.BodyHandlers.discarding());
       WebApplicationException upstreamError = new WebApplicationException(
             Response.status(response.statusCode()).build());
@@ -68,10 +80,11 @@ class UpstreamErrorWireMockSmokeTest
    void stubConnectionReset_mapsTo502()
    {
       resource.start();
-      UpstreamErrorWireMock.stubConnectionReset();
+      UpstreamErrorWireMock.stubConnectionReset(TestResource.class);
 
       IOException ioException = assertThrows(IOException.class, () -> client.send(
-            HttpRequest.newBuilder(URI.create(UpstreamErrorWireMock.getWireMockServer().baseUrl())).GET().build(),
+            HttpRequest.newBuilder(URI.create(UpstreamErrorWireMock.getWireMockServer(TestResource.class).baseUrl()))
+                  .GET().build(),
             HttpResponse.BodyHandlers.discarding()));
 
       Response mapped = mapper.handleProcessingException(new ProcessingException(ioException));
@@ -85,10 +98,11 @@ class UpstreamErrorWireMockSmokeTest
    void stubEmptyResponse_mapsTo502()
    {
       resource.start();
-      UpstreamErrorWireMock.stubEmptyResponse();
+      UpstreamErrorWireMock.stubEmptyResponse(TestResource.class);
 
       IOException ioException = assertThrows(IOException.class, () -> client.send(
-            HttpRequest.newBuilder(URI.create(UpstreamErrorWireMock.getWireMockServer().baseUrl())).GET().build(),
+            HttpRequest.newBuilder(URI.create(UpstreamErrorWireMock.getWireMockServer(TestResource.class).baseUrl()))
+                  .GET().build(),
             HttpResponse.BodyHandlers.discarding()));
       NullPointerException maskedByLoggingFilter = new NullPointerException("no response headers");
       maskedByLoggingFilter.addSuppressed(ioException);
@@ -97,5 +111,27 @@ class UpstreamErrorWireMockSmokeTest
 
       assertEquals(502, mapped.getStatus());
       assertEquals(new ErrorResponse("Upstream unavailable"), mapped.getEntity());
+   }
+
+   @Test
+   @DisplayName("Två registrerade instanser stubbas och nås oberoende av varandra")
+   void twoRegisteredInstances_areIndependentlyStubbed() throws Exception
+   {
+      resource.start();
+      otherResource.start();
+      UpstreamErrorWireMock.stubUpstreamStatus(TestResource.class, 404);
+      UpstreamErrorWireMock.stubUpstreamStatus(OtherTestResource.class, 418);
+
+      int firstStatus = client.send(
+            HttpRequest.newBuilder(URI.create(UpstreamErrorWireMock.getWireMockServer(TestResource.class).baseUrl()))
+                  .GET().build(),
+            HttpResponse.BodyHandlers.discarding()).statusCode();
+      int secondStatus = client.send(
+            HttpRequest.newBuilder(URI.create(UpstreamErrorWireMock.getWireMockServer(OtherTestResource.class).baseUrl()))
+                  .GET().build(),
+            HttpResponse.BodyHandlers.discarding()).statusCode();
+
+      assertEquals(404, firstStatus);
+      assertEquals(418, secondStatus);
    }
 }

@@ -22,12 +22,23 @@ class HealthCheckWireMockSmokeTest
       }
    }
 
+   private static class OtherTestResource extends HealthCheckWireMock
+   {
+      @Override
+      protected Map<String, String> wiremockMapping(WireMockServer server)
+      {
+         return Map.of("test.arende.url", server.baseUrl());
+      }
+   }
+
    private final TestResource resource = new TestResource();
+   private final OtherTestResource otherResource = new OtherTestResource();
 
    @AfterEach
    void stopServer()
    {
       resource.stop();
+      otherResource.stop();
    }
 
    @Test
@@ -35,9 +46,10 @@ class HealthCheckWireMockSmokeTest
    void stubUp_healthCheckReportsUp()
    {
       resource.start();
-      HealthCheckWireMock.stubUp();
+      HealthCheckWireMock.stubUp(TestResource.class);
 
-      UpstreamHealthCheck check = new UpstreamHealthCheck("oul-backend", HealthCheckWireMock.getWireMockServer().baseUrl(), 2000);
+      UpstreamHealthCheck check = new UpstreamHealthCheck("oul-backend",
+            HealthCheckWireMock.getWireMockServer(TestResource.class).baseUrl(), 2000);
 
       assertEquals(HealthCheckResponse.Status.UP, check.call().getStatus());
    }
@@ -47,9 +59,10 @@ class HealthCheckWireMockSmokeTest
    void stubDown_healthCheckReportsDown()
    {
       resource.start();
-      HealthCheckWireMock.stubDown(503);
+      HealthCheckWireMock.stubDown(TestResource.class, 503);
 
-      UpstreamHealthCheck check = new UpstreamHealthCheck("oul-backend", HealthCheckWireMock.getWireMockServer().baseUrl(), 2000);
+      UpstreamHealthCheck check = new UpstreamHealthCheck("oul-backend",
+            HealthCheckWireMock.getWireMockServer(TestResource.class).baseUrl(), 2000);
 
       assertEquals(HealthCheckResponse.Status.DOWN, check.call().getStatus());
    }
@@ -59,10 +72,29 @@ class HealthCheckWireMockSmokeTest
    void stubTimeout_healthCheckReportsDown()
    {
       resource.start();
-      HealthCheckWireMock.stubTimeout(2000);
+      HealthCheckWireMock.stubTimeout(TestResource.class, 2000);
 
-      UpstreamHealthCheck check = new UpstreamHealthCheck("oul-backend", HealthCheckWireMock.getWireMockServer().baseUrl(), 200);
+      UpstreamHealthCheck check = new UpstreamHealthCheck("oul-backend",
+            HealthCheckWireMock.getWireMockServer(TestResource.class).baseUrl(), 200);
 
       assertEquals(HealthCheckResponse.Status.DOWN, check.call().getStatus());
+   }
+
+   @Test
+   @DisplayName("Två registrerade instanser klassificeras oberoende av varandra")
+   void twoRegisteredInstances_areIndependentlyClassified()
+   {
+      resource.start();
+      otherResource.start();
+      HealthCheckWireMock.stubUp(TestResource.class);
+      HealthCheckWireMock.stubDown(OtherTestResource.class, 503);
+
+      UpstreamHealthCheck oul = new UpstreamHealthCheck("oul-backend",
+            HealthCheckWireMock.getWireMockServer(TestResource.class).baseUrl(), 2000);
+      UpstreamHealthCheck arende = new UpstreamHealthCheck("arende-backend",
+            HealthCheckWireMock.getWireMockServer(OtherTestResource.class).baseUrl(), 2000);
+
+      assertEquals(HealthCheckResponse.Status.UP, oul.call().getStatus());
+      assertEquals(HealthCheckResponse.Status.DOWN, arende.call().getStatus());
    }
 }
