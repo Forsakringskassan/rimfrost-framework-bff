@@ -33,10 +33,8 @@
 - **FBFF-FR-03.1** Ramverket ska automatiskt vidarebefordra den inkommande
   `Authorization`-headern till utgående REST-klientanrop mot bakomliggande tjänster, utan att
   varje endpoint eller klientgränssnitt explicit behöver deklarera och skicka den vidare.
-- **FBFF-FR-03.2** Ramverket ska inte verifiera eller lagra auktoriseringsuppgifterna — det
-  ansvaret ligger kvar hos de bakomliggande tjänsterna. Ramverket får läsa ut vem anroparen
-  är ur headern enbart för att fylla i användaren i ett informationsaccess-event enligt
-  FBFF-FR-05, inte för något annat ändamål, och värdet får inte sparas längre än anropet.
+- **FBFF-FR-03.2** Ramverket ska inte självt tolka, verifiera eller lagra
+  auktoriseringsuppgifterna — det ansvaret ligger kvar hos de bakomliggande tjänsterna.
 - **FBFF-FR-03.3** Om ingen `Authorization`-header finns i den inkommande förfrågan ska
   ramverket inte skicka en tom eller påhittad header vidare till bakomliggande tjänst.
 
@@ -49,18 +47,12 @@
   även om ett exception kastas under körningen, för att undvika att kontext läcker mellan
   anrop.
 
-### FBFF-FR-05 — Publicering av informationsaccess-event
+### FBFF-FR-06 — Tillförlitlighet vid publicering
 
-- **FBFF-FR-05.1** Ramverket ska publicera ett informationsaccess-event när ett svar som
-  innehåller information om en eller flera individer lämnar BFF:en till klienten. Avgörande
-  är vad som skickas till klienten, inte vad som hämtats internt. Eventets innehåll och
-  struktur styrs av kontraktet i `rimfrost-service-informationsaccess-asyncapi`.
-- **FBFF-FR-05.2** Ramverket ska fylla i användare, tidpunkt och källa utan att den
-  konsumerande BFF:en behöver göra något, på samma sätt som vidarebefordran av
-  `Authorization`-headern sker automatiskt.
-- **FBFF-FR-05.3** Ramverket ska kunna ta emot de delar av eventet som det inte självt kan
-  känna till, såsom vilka individer svaret rör och vilken information som ingår, från den
-  konsumerande BFF:en.
+- **FBFF-FR-06.1** Ramverket ska inte tyst förlora event. Om ett event inte kan publiceras,
+  t.ex. för att bufferten är full eller Kafka inte svarar, ska det framgå för den anropande
+  BFF:en så att den kan avgöra hur felet ska hanteras.
+- **FBFF-FR-06.2** Ramverket ska inte ändra innehållet i det event det tar emot.
 
 ---
 
