@@ -47,6 +47,11 @@
   även om ett exception kastas under körningen, för att undvika att kontext läcker mellan
   anrop.
 
+### FBFF-FR-05 ILogg
+
+- **FBFF-FR-05.1** Ramverket ska tillhandahålla en kafka klient som stödjer publicering av event
+  av typen `InformationsaccessEvent` till ett konfigurerbart topic så att de kan lagras i ILoggen.
+
 ---
 
 ## Icke-funktionella krav
