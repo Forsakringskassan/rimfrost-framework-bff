@@ -2,6 +2,19 @@
 
 Changelog of rimfrost-framework-bff.
 
+## 0.0.2 (2026-10-27)
+
+### Bug Fixes
+
+-  use shared bundle-maven-lib workflow references ([f5327](https://github.com/Forsakringskassan/rimfrost-framework-bff/commit/f5327b919b59026) Ulf Slunga)  
+
+### Dependency updates
+
+- update forsakringskassan/.github digest to cbd74f1 ([4e15d](https://github.com/Forsakringskassan/rimfrost-framework-bff/commit/4e15d8fa56e5f98) renovate[bot])  
+- update dependency org.apache.maven.plugins:maven-compiler-plugin to v3.16.0 ([b277c](https://github.com/Forsakringskassan/rimfrost-framework-bff/commit/b277c5734846923) renovate[bot])  
+- pin forsakringskassan/.github action to bfb01f7 ([a3794](https://github.com/Forsakringskassan/rimfrost-framework-bff/commit/a379470c0afb909) renovate[bot])  
+## rimfrost-1_2 (2026-09-23)
+
 ## 0.0.1 (2026-09-23)
 
 ### Features
