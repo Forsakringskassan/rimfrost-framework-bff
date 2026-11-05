@@ -56,7 +56,7 @@ lagras aldrig av ramverket.
 Topic som ILogg klienten publicerar till specificeras av konsumerande BFF via egenskapen `mp.messaging.outgoing.ilogg-event.topic` 
 i application.properties. Det kan också specificeras via environment variabeln `MP_MESSAGING_OUTGOING_ILOGG_EVENT_TOPIC`.
 
-`publish` väntar tills Kafka har kvitterat eventet, högst den tid som anges i
+Vid publicering av event väntar ILogg klienten tills Kafka har kvitterat eventet, dock högst den tid som anges i
 `rimfrost.ilogg.publish-timeout` (standard `10s`). Om publiceringen misslyckas eller tiden går ut
 kastas `ILoggException`, och den anropande BFF:en avgör hur felet ska hanteras.
 
