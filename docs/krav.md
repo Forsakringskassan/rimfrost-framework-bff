@@ -58,6 +58,9 @@
   t.ex. för att bufferten är full eller Kafka inte svarar, ska det framgå för den anropande
   BFF:en så att den kan avgöra hur felet ska hanteras.
 - **FBFF-FR-06.2** Ramverket ska inte ändra innehållet i det event det tar emot.
+- **FBFF-FR-06.3** Ramverket ska inte låta anroparen vänta längre än en konfigurerbar tid på
+  att ett event publiceras. Om tiden går ut ska det hanteras som en misslyckad publicering
+  enligt FBFF-FR-06.1.
 
 ---
 
