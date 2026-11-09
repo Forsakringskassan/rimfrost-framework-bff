@@ -2,6 +2,30 @@
 
 Changelog of rimfrost-framework-bff.
 
+## 0.0.4 (2026-11-07)
+
+### Bug Fixes
+
+-  vänta på Kafka-kvittens med timeout vid publicering av ILogg-event (FKPOC-1320) ([d8135](https://github.com/Forsakringskassan/rimfrost-framework-bff/commit/d8135e6fac64afa) julolsso)  
+
+### Dependency updates
+
+- update forsakringskassan/.github digest to cbc0db8 ([dfaed](https://github.com/Forsakringskassan/rimfrost-framework-bff/commit/dfaed089c8275aa) renovate[bot])  
+### Other changes
+
+**Update README.md**
+
+* Co-authored-by: larpersso &lt;254442132+larpersso@users.noreply.github.com&gt; 
+
+[8bf1f](https://github.com/Forsakringskassan/rimfrost-framework-bff/commit/8bf1fd5d9100163) Julia Olsson Ductus *2026-11-05 12:05:46*
+
+**Merge main och placera FBFF-FR-06 efter FBFF-FR-05 (FKPOC-1102)**
+
+* Co-Authored-By: Claude Opus 5.5 &lt;noreply@anthropic.com&gt; 
+
+[fc86b](https://github.com/Forsakringskassan/rimfrost-framework-bff/commit/fc86b5dd04e12ec) julolsso *2026-11-04 14:22:30*
+
+
 ## 0.0.3 (2026-11-03)
 
 ### Bug Fixes
